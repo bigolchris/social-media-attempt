@@ -67,3 +67,5 @@ const LoginNav = () => {
       });
   };
 };
+
+export default LoginNav;

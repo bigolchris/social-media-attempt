@@ -66,6 +66,37 @@ const LoginNav = () => {
         });
       });
   };
+
+  return (
+    <Flex
+      justifyContent="space-between"
+      alignItems="center"
+      p={4}
+      position="sticky"
+      top={0}
+      zIndex="100"
+      backgroundColor={colorMode === "light" ? "#ffffff" : "1a202c"}
+    >
+      <Flex>
+        <Heading
+          color={colorMode === "light" ? "black" : "white"}
+          size="xl"
+          fontFamily="sans-serif"
+        >
+          PLACE_HOLDER
+        </Heading>
+      </Flex>
+      <Tooltip label="Search..." openDelay={350}>
+        <InputGroup mx={8} width="50vw">
+          <InputLeftElement
+            pointerEvents="none"
+            children={<ImSearch color="gray.300" />}
+          />
+          <Input type="text" placeholder="Search..." variant="filled" />
+        </InputGroup>
+      </Tooltip>
+    </Flex>
+  );
 };
 
 export default LoginNav;

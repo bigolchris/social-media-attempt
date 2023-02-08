@@ -98,3 +98,42 @@ type Props = {
     id: string;
   };
 };
+
+const Post = (props: Props) => {
+  const {
+    isOpen: isEditOpen,
+    onOpen: onCommentOpen,
+    onClose: onEditClose,
+  } = useDisclosure();
+
+  const cancelRef = React.useRef();
+  const db = getFirestore(app);
+  const toast = useToast();
+  const [loading, setLoading] = useState(false);
+
+  const deletePost = async () => {
+    setLoading(true);
+    await deleteDoc(doc(db, "posts", props?.posts?.id as string))
+      .then(() => {
+        setLoading(false);
+        onClose();
+        toast({
+          title: "Success",
+          description: "Post deleted successfully",
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+        });
+      })
+      .catch((err) => {
+        setLoading(false);
+        toast({
+          title: "Error",
+          description: err.message,
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+        });
+      });
+  };
+};

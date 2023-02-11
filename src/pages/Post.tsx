@@ -332,4 +332,92 @@ const Post = (props: Props) => {
     }
   };
   const [saved, setSaved] = useState(false);
+  const getSavedPosts = async () => {
+    const docman = await getDoc(
+      doc(
+        db,
+        "users",
+        auth?.currentUser?.uid as string,
+        "savedposts",
+        props?.posts?.id as string
+      )
+    );
+    if (docman.exists()) {
+      setSaved(true);
+    } else {
+      setSaved(false);
+    }
+  };
+  useEffect(() => {
+    getSavedPosts();
+  }, [auth?.currentUser?.uid, props?.posts?.id, db]);
+  const savePost = async () => {
+    if (saved) {
+      await deleteDoc(
+        doc(
+          db,
+          "users",
+          auth?.currentUser?.uid as string,
+          "savedposts",
+          props?.posts?.id as string
+        )
+      )
+        .then(() => {
+          setSaved(false);
+          toast({
+            title: "Success",
+            description: "Post removed from saved posts",
+            status: "success",
+            duration: 1000,
+            isClosable: true,
+          });
+        })
+        .catch((err) => {
+          toast({
+            title: "Error",
+            description: err?.message,
+            status: "error",
+            duration: 1000,
+            isClosable: true,
+          });
+        });
+    } else {
+      await setDoc(
+        doc(
+          db,
+          "users",
+          auth?.currentUser?.uid as string,
+          "savedposts",
+          props?.posts?.id as string
+        ),
+        {
+          caption: props?.posts?.caption,
+          image: props?.posts?.image,
+          createdAt: props?.posts?.createdAt,
+          username: props?.posts?.userName,
+          userId: props?.posts?.userId,
+          userPfp: props?.posts?.userPfp,
+        }
+      )
+        .then(() => {
+          setSaved(true);
+          toast({
+            title: "Success",
+            description: "Post saved successfully",
+            status: "success",
+            duration: 1000,
+            isClosable: true,
+          });
+        })
+        .catch((err) => {
+          toast({
+            title: "Error",
+            description: err?.message,
+            status: "error",
+            duration: 1000,
+            isClosable: true,
+          });
+        });
+    }
+  };
 };

@@ -428,6 +428,53 @@ const Post = (props: Props) => {
   };
 
   const { colorMode } = useColorMode();
-  const [comments, setComments] = useState("");
+  const [comment, setComment] = useState("");
   const [commentLoading, setCommentLoading] = useState(false);
+
+  const commentMan = async () => {
+    await addDoc(
+      collection(db, "posts", props?.posts?.id as string, "comments"),
+      {
+        comment: comment,
+        userId: auth?.currentUser?.uid,
+        userPfp: auth?.currentUser?.photoURL,
+        userName: auth?.currentUser?.displayName,
+      }
+    )
+      .then(() => {
+        setCommentLoading(false);
+        setComment("");
+        toast({
+          title: "Success",
+          description: "Comment added successfully",
+          status: "success",
+          duration: 300,
+          isClosable: true,
+        });
+      })
+      .catch((err) => {
+        setCommentLoading(false);
+        toast({
+          title: "Error",
+          description: err?.message,
+          status: "error",
+          duration: 300,
+          isClosable: true,
+        });
+      });
+  };
+
+  const [comments, setComments] = useState<DocumentData | undefined>(undefined);
+  useEffect(() => {
+    onSnapshot(
+      collection(db, "posts", props?.posts?.id as string, "comments"),
+      (snapshot) => {
+        const commentsMan = snapshot?.docs?.map((doc) => ({
+          id: doc?.id,
+          ...doc?.data(),
+        }));
+        setComments(commentsMan);
+      }
+    );
+  }, [db, props?.posts?.id]);
 };

@@ -86,6 +86,8 @@ import {
   DrawerContent,
   DrawerCloseButton,
 } from "@chakra-ui/react";
+import { useNavigate } from "react-router-dom";
+import { getUA } from "@firebase/util";
 
 type Props = {
   posts?: {
@@ -101,11 +103,18 @@ type Props = {
 
 const Post = (props: Props) => {
   const {
-    isOpen: isEditOpen,
+    isOpen: isCommentOpen,
     onOpen: onCommentOpen,
-    onClose: onEditClose,
+    onClose: onCommentClose,
   } = useDisclosure();
 
+  const auth = getAuth(app);
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: isEditOpen,
+    onOpen: onEditOpen,
+    onClose: onEditClose,
+  } = useDisclosure();
   const cancelRef = React.useRef();
   const db = getFirestore(app);
   const toast = useToast();
@@ -136,4 +145,191 @@ const Post = (props: Props) => {
         });
       });
   };
+
+  const [caption, setCaption] = useState(props?.posts?.caption as string);
+  const [image, setImage] = useState(props?.posts?.image);
+  const [imageUrl, setImageUrl] = useState("");
+  const storage = getStorage(app);
+  const navigate = useNavigate();
+  const uploadImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    //@ts-ignore
+    setImageUrl(URL.createObjectURL(e?.target?.files[0]));
+    //@ts-ignore
+    setImage(e?.target?.files[0]);
+  };
+  const [updateLoading, setUpdateLoading] = useState(false);
+  const updatePost = async () => {
+    setUpdateLoading(true);
+    if (image === props?.posts?.image) {
+      //@ts-ignore
+      await updateDoc(doc(db, "posts", props?.posts?.id), {
+        caption: caption,
+        image: image,
+      }).then(() => {
+        setUpdateLoading(false);
+        toast({
+          title: "Success",
+          description: "Post updated successfully",
+          status: "success",
+          duration: 1000,
+          isClosable: true,
+        });
+        onEditClose();
+      });
+    } else {
+      //@ts-ignore
+      const storageRef = ref(storage, `/images/${image.name + Date.now()}`);
+      //@ts-ignore
+      const uploadTask = uploadBytesResumable(storageRef, image);
+      uploadTask.on(
+        "state_changed",
+        (snapshot) => {},
+        (err) => {
+          setUpdateLoading(false);
+          toast({
+            title: "Error",
+            description: err?.message,
+            status: "error",
+            duration: 1000,
+            isClosable: true,
+          });
+        },
+        () => {
+          getDownloadURL(uploadTask.snapshot.ref)
+            .then(async (url) => {
+              //@ts-ignore
+              await updateDoc(doc(db, "posts", props?.posts?.id), {
+                caption: caption,
+                image: url,
+              })
+                .then(() => {
+                  setUpdateLoading(false);
+                  onEditClose();
+                  toast({
+                    title: "Success",
+                    description: "Post updated succesfully",
+                    status: "success",
+                    duration: 1000,
+                    isClosable: true,
+                  });
+                })
+                .catch((err) => {
+                  setUpdateLoading(false);
+                  onEditClose();
+                  toast({
+                    title: "Error",
+                    description: err?.message,
+                    status: "error",
+                    duration: 1000,
+                    isClosable: true,
+                  });
+                });
+            })
+            .catch((err) => {
+              onEditClose();
+              setUpdateLoading(false);
+              toast({
+                title: "Error",
+                description: err?.message,
+                status: "error",
+                duration: 1000,
+                isClosable: true,
+              });
+            });
+        }
+      );
+    }
+  };
+  const [loadyman, setLoadyman] = useState(false);
+  const {
+    isOpen: isReportOpen,
+    onOpen: onReportOpen,
+    onClose: onReportClose,
+  } = useDisclosure();
+  const reportPost = () => {
+    onReportClose();
+    toast({
+      title: "Success",
+      description: "Post reported successfully",
+      status: "success",
+      duration: 1000,
+      isClosable: true,
+    });
+  };
+  const [likes, setLikes] = useState([]);
+  useEffect(() => {
+    onSnapshot(
+      collection(db, "posts", props?.posts?.id as string, "likes"),
+      //@ts-ignore
+      (snapshot) => setLikes(snapshot?.docs)
+    );
+  }, [db, props?.posts?.id]);
+  const [liked, setLiked] = useState(false);
+  useEffect(() => {
+    setLiked(
+      likes?.findIndex((like: any) => like?.id === auth?.currentUser?.uid) !==
+        -1
+    );
+  }, [likes]);
+  const likePost = async () => {
+    if (liked) {
+      await deleteDoc(
+        doc(
+          db,
+          "posts",
+          props?.posts?.id as string,
+          "likes",
+          auth?.currentUser?.uid as string
+        )
+      )
+        .then(() => {
+          toast({
+            title: "Success",
+            description: "like removed successfully",
+            status: "success",
+            duration: 1000,
+            isClosable: true,
+          });
+        })
+        .catch((err) => {
+          toast({
+            title: "Error",
+            description: err?.message,
+            status: "error",
+            duration: 1000,
+            isClosable: true,
+          });
+        });
+    } else {
+      await setDoc(
+        doc(
+          db,
+          "posts",
+          props?.posts?.id as string,
+          "likes",
+          auth?.currentUser?.uid as string
+        ),
+        { username: auth?.currentUser?.displayName }
+      )
+        .then(() => {
+          toast({
+            title: "Success",
+            description: "Post liked successfully",
+            status: "success",
+            duration: 1000,
+            isClosable: true,
+          });
+        })
+        .catch((err) => {
+          toast({
+            title: "Error",
+            description: err?.message,
+            status: "error",
+            duration: 1000,
+            isClosable: true,
+          });
+        });
+    }
+  };
+  const [saved, setSaved] = useState(false);
 };

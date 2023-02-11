@@ -420,4 +420,14 @@ const Post = (props: Props) => {
         });
     }
   };
+  type CommentType = {
+    comment: string;
+    userName: string;
+    userPfp: string;
+    userId: string;
+  };
+
+  const { colorMode } = useColorMode();
+  const [comments, setComments] = useState("");
+  const [commentLoading, setCommentLoading] = useState(false);
 };
